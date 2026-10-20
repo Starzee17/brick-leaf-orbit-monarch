@@ -275,22 +275,23 @@ function secret(name: string) {
   return process.env[name]?.trim() ?? "";
 }
 
-type Wallet = "airtel" | "mtn" | "zamtel";
+type Wallet = "airtel" | "mtn" | "zamtel" | "btcpay";
 
 function walletReady(provider: Wallet) {
   if (provider === "mtn") return Boolean(secret("MTN_MOMO_SUBSCRIPTION_KEY") && secret("MTN_MOMO_API_USER") && secret("MTN_MOMO_API_KEY"));
   if (provider === "airtel") return Boolean(secret("AIRTEL_CLIENT_ID") && secret("AIRTEL_CLIENT_SECRET") && secret("AIRTEL_BASE_URL"));
+  if (provider === "btcpay") return Boolean(secret("BTCPAY_URL") && secret("BTCPAY_STORE_ID") && secret("BTCPAY_API_KEY"));
   return Boolean(secret("ZAMTEL_API_KEY") && secret("ZAMTEL_BASE_URL"));
 }
 
-async function pushToWallet(provider: Wallet, input: { msisdn: string; amount: string; reference: string; eventTitle: string }): Promise<{ status: "pending" | "paid"; message: string }> {
+async function pushToWallet(provider: Wallet, input: { msisdn: string; amount: string; reference: string; eventTitle: string }): Promise<{ status: "pending" | "paid"; message: string; reference?: string; checkoutUrl?: string }> {
   if (!walletReady(provider)) {
-    throw new Error(
-      `${provider === "mtn" ? "MTN MoMo" : provider === "airtel" ? "Airtel Money" : "Zamtel"} is not connected. The app will not take money until that provider’s merchant keys are set on the server.`,
-    );
+    const label = provider === "mtn" ? "MTN MoMo" : provider === "airtel" ? "Airtel Money" : provider === "btcpay" ? "BTCPay Server" : "Zamtel";
+    throw new Error(`${label} is not connected. The app will not take money until that provider’s keys are set on the server.`);
   }
   if (provider === "mtn") return pushMtn(input);
   if (provider === "airtel") return pushAirtel(input);
+  if (provider === "btcpay") return pushBtcpay(input);
   return pushZamtel(input);
 }
 
@@ -381,7 +382,48 @@ async function pushZamtel(input: { msisdn: string; amount: string; reference: st
   return { status: "pending" as const, message: "Approve the Zamtel prompt on your phone, then tap Check status." };
 }
 
+async function pushBtcpay(input: { amount: string; reference: string; eventTitle: string }) {
+  const base = secret("BTCPAY_URL").replace(/\/$/, "");
+  const storeId = secret("BTCPAY_STORE_ID");
+  const res = await fetch(`${base}/api/v1/stores/${encodeURIComponent(storeId)}/invoices`, {
+    method: "POST",
+    headers: {
+      Authorization: `token ${secret("BTCPAY_API_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: input.amount,
+      currency: secret("BTCPAY_CURRENCY") || "USD",
+      metadata: { orderId: input.reference, itemDesc: input.eventTitle },
+      checkout: { speedPolicy: "MediumSpeed" },
+    }),
+  });
+  if (!res.ok) throw new Error("BTCPay Server did not create an invoice.");
+  const body = (await res.json()) as { id?: string; checkoutLink?: string };
+  if (!body.id || !body.checkoutLink) throw new Error("BTCPay Server returned an invoice without a checkout link.");
+  return {
+    status: "pending" as const,
+    reference: body.id,
+    checkoutUrl: body.checkoutLink,
+    message: "Finish payment on the BTCPay invoice, then come back and tap Check status.",
+  };
+}
+
+async function readBtcpay(invoiceId: string): Promise<"paid" | "pending" | "failed"> {
+  const base = secret("BTCPAY_URL").replace(/\/$/, "");
+  const storeId = secret("BTCPAY_STORE_ID");
+  const res = await fetch(`${base}/api/v1/stores/${encodeURIComponent(storeId)}/invoices/${encodeURIComponent(invoiceId)}`, {
+    headers: { Authorization: `token ${secret("BTCPAY_API_KEY")}` },
+  });
+  if (!res.ok) return "pending";
+  const body = (await res.json()) as { status?: string };
+  if (body.status === "Settled") return "paid";
+  if (body.status === "Invalid" || body.status === "Expired") return "failed";
+  return "pending";
+}
+
 async function readWalletStatus(provider: string, reference: string): Promise<"paid" | "pending" | "failed"> {
+  if (provider === "btcpay") return readBtcpay(reference);
   if (provider === "mtn") {
     const base = secret("MTN_MOMO_BASE_URL") || "https://sandbox.momodeveloper.mtn.com";
     const basic = Buffer.from(`${secret("MTN_MOMO_API_USER")}:${secret("MTN_MOMO_API_KEY")}`).toString("base64");
@@ -410,7 +452,7 @@ async function readWalletStatus(provider: string, reference: string): Promise<"p
 export const purchaseTicket = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: { eventId: number; phone?: string; provider?: string }) => {
-    const provider = input.provider === "airtel" || input.provider === "mtn" || input.provider === "zamtel" ? input.provider : "";
+    const provider = input.provider === "airtel" || input.provider === "mtn" || input.provider === "zamtel" || input.provider === "btcpay" ? input.provider : "";
     return { eventId: Number(input.eventId), phone: String(input.phone ?? ""), provider };
   })
   .handler(async ({ context, data }) => {
@@ -446,16 +488,17 @@ export const purchaseTicket = createServerFn({ method: "POST" })
     }
 
     const provider = data.provider;
-    const msisdn = normalizeZm(data.phone);
-    if (!provider) throw new Error("Choose Airtel, MTN, or Zamtel.");
+    if (!provider) throw new Error("Choose a payment method.");
+    const msisdn = provider === "btcpay" ? "" : normalizeZm(data.phone);
     const reference = crypto.randomUUID();
     const amount = (num(event.price_cents) / 100).toFixed(2);
     const pushed = await pushToWallet(provider as Wallet, { msisdn, amount, reference, eventTitle: event.title });
+    const storedRef = pushed.reference || reference;
     const pay = await sql<{ id: number }>`
       insert into payments (user_id, event_id, amount_cents, status, last4, provider, msisdn, reference)
       values (
         ${context.userId}, ${data.eventId}, ${num(event.price_cents)}, ${pushed.status},
-        ${msisdn.slice(-4)}, ${provider}, ${msisdn}, ${reference}
+        ${msisdn.slice(-4)}, ${provider}, ${msisdn}, ${storedRef}
       )
       returning id
     `;
@@ -472,6 +515,7 @@ export const purchaseTicket = createServerFn({ method: "POST" })
       title: event.title,
       paymentId: num(pay[0]?.id),
       message: pushed.message,
+      checkoutUrl: pushed.checkoutUrl,
     };
   });
 

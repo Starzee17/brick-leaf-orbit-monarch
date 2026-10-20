@@ -9,8 +9,9 @@ import { money } from "@/lib/format";
 export const Route = createFileRoute("/checkout/$eventId")({ component: Checkout });
 
 const WALLETS = [
-  { id: "airtel", label: "Airtel Money" },
-  { id: "mtn", label: "MTN MoMo" },
+  { id: "btcpay", label: "BTCPay" },
+  { id: "airtel", label: "Airtel" },
+  { id: "mtn", label: "MTN" },
   { id: "zamtel", label: "Zamtel" },
 ] as const;
 
@@ -21,7 +22,7 @@ function Checkout() {
   const { user, isPending } = useCurrentUserState();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [phone, setPhone] = useState("");
-  const [provider, setProvider] = useState<(typeof WALLETS)[number]["id"]>("airtel");
+  const [provider, setProvider] = useState<(typeof WALLETS)[number]["id"]>("btcpay");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [paymentId, setPaymentId] = useState<number | null>(null);
@@ -51,7 +52,8 @@ function Checkout() {
         return;
       }
       setPaymentId(result.paymentId ?? null);
-      setNote(result.message ?? "Approve the prompt on your phone.");
+      setNote(result.message ?? "Approve the payment, then check status.");
+      if (result.checkoutUrl) window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment failed.");
     } finally {
@@ -86,9 +88,9 @@ function Checkout() {
             {event.priceCents > 0 && (
               <>
                 <p className="text-sm text-muted">
-                  Pay from Airtel Money, MTN MoMo, or Zamtel. You approve it on your phone. This form never asks for your PIN.
+                  BTCPay Server is free and open source. Bitcoin and Lightning are confirmed on its invoice. Airtel, MTN, and Zamtel still use their own merchant APIs. A ticket is issued only after the provider marks the payment paid.
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {WALLETS.map((w) => (
                     <button
                       key={w.id}
@@ -100,6 +102,7 @@ function Checkout() {
                     </button>
                   ))}
                 </div>
+                {provider !== "btcpay" && (
                 <input
                   inputMode="tel"
                   autoComplete="tel"
@@ -108,6 +111,7 @@ function Checkout() {
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full rounded-2xl border border-line bg-surface px-4 py-3"
                 />
+                )}
               </>
             )}
             {note && <p className="text-sm text-forest">{note}</p>}
