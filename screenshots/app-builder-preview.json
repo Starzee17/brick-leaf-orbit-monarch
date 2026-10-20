@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "My Event",
+      "hasCanvas": false,
+      "bodyTextLen": 162,
+      "bodyTextHash": "0af1a23e1783248f6b38d5f45602825f5b7371d94cbd7f2a52a42091bbe345bd",
+      "bodyTextPrefix": "My Event What’s on Browse now. Your tickets stay on this phone i",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "My Event",
+      "hasCanvas": false,
+      "bodyTextLen": 162,
+      "bodyTextHash": "0af1a23e1783248f6b38d5f45602825f5b7371d94cbd7f2a52a42091bbe345bd",
+      "bodyTextPrefix": "My Event What’s on Browse now. Your tickets stay on this phone i",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

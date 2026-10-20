@@ -1,0 +1,41 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "My Event",
+      "hasCanvas": false,
+      "bodyTextLen": 761,
+      "bodyTextHash": "92b956e7462c97c5409c18adec90841a9b9c8b88b1f1e90351b6d2f79a9b3ed8",
+      "bodyTextPrefix": "My Event What’s on Browse now. Your tickets stay on this phone i",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/prod-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "My Event",
+      "hasCanvas": false,
+      "bodyTextLen": 761,
+      "bodyTextHash": "92b956e7462c97c5409c18adec90841a9b9c8b88b1f1e90351b6d2f79a9b3ed8",
+      "bodyTextPrefix": "My Event What’s on Browse now. Your tickets stay on this phone i",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/prod-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/prod-preview.json",
+  "divergesFromBaseline": true,
+  "baselineReasons": [
+    "desktop: body text changed (162 -> 761 chars, hash mismatch)",
+    "mobile: body text changed (162 -> 761 chars, hash mismatch)"
+  ]
+}

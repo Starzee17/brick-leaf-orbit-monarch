@@ -1,0 +1,1 @@
+var e=`myevent.events.v1`,t=`myevent.tickets.v1`;function n(e){if(typeof window>`u`)return null;try{let t=localStorage.getItem(e);return t?JSON.parse(t):null}catch{return null}}function r(e,t){try{localStorage.setItem(e,JSON.stringify(t))}catch{}}var i={EVENTS:e,TICKETS:t};export{n,r,i as t};

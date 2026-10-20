@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --app-bg: #f4efe6;
+  --app-surface: #fffdf8;
+  --app-ink: #1c1915;
+  --app-muted: #6f675c;
+  --app-line: #e4dccf;
+  --app-primary: #c2410c;
+  --app-primary-ink: #fff7f2;
+  --app-forest: #1f3d36;
+  --shadow: 0 12px 30px rgb(28 25 21 / 0.08);
+}
+
+[data-theme="dark"] {
+  --app-bg: #12110f;
+  --app-surface: #1c1a17;
+  --app-ink: #f4efe6;
+  --app-muted: #b3aa9d;
+  --app-line: #2e2a25;
+  --app-primary: #e07a3d;
+  --app-primary-ink: #1c120c;
+  --app-forest: #9dcec2;
+  --shadow: 0 12px 30px rgb(0 0 0 / 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-ink: var(--app-ink);
+  --color-muted: var(--app-muted);
+  --color-line: var(--app-line);
+  --color-primary: var(--app-primary);
+  --color-primary-ink: var(--app-primary-ink);
+  --color-forest: var(--app-forest);
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Newsreader", ui-serif, Georgia, serif;
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html, body { background: var(--app-bg); color: var(--app-ink); }
+  body { font-family: var(--font-sans); min-height: 100%; }
+}
+
+.tone-ember { background: linear-gradient(145deg, #c2410c, #7c2d12); }
+.tone-moss { background: linear-gradient(145deg, #3f6212, #1a2e05); }
+.tone-ink { background: linear-gradient(145deg, #334155, #0f172a); }
+.tone-tide { background: linear-gradient(145deg, #0e7490, #164e63); }
+.tone-dusk { background: linear-gradient(145deg, #6d28d9, #312e81); }
+.tone-clay { background: linear-gradient(145deg, #b45309, #78350f); }
+
+[data-theme="dark"] .tone-ember,
+[data-theme="dark"] .tone-moss,
+[data-theme="dark"] .tone-ink,
+[data-theme="dark"] .tone-tide,
+[data-theme="dark"] .tone-dusk,
+[data-theme="dark"] .tone-clay {
+  color: #fff7f2;
+}
